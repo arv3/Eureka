@@ -142,8 +142,9 @@ open class Row<Cell: CellType>: RowOf<Cell.Value>, TypedRowType where Cell: Base
     /// The type of the cell associated to this row.
     public let cellType: Cell.Type! = Cell.self
 
-    private var _cell: Cell! {
+    private var _cell: Cell? {
         didSet {
+			guard let _cell = _cell else { return }
             RowDefaults.cellSetup["\(type(of: self))"]?(_cell, self)
             (callbackCellSetup as? ((Cell) -> Void))?(_cell)
         }
