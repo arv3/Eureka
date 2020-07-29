@@ -83,13 +83,13 @@ open class BaseRow: BaseRowType {
     /// Condition that determines if the row should be disabled or not.
     public var disabled: Condition? {
         willSet { removeFromDisabledRowObservers() }
-        didSet { addToDisabledRowObservers() }
+		didSet { addToDisabledRowObservers(); evaluateDisabled() }
     }
 
     /// Condition that determines if the row should be hidden or not.
     public var hidden: Condition? {
         willSet { removeFromHiddenRowObservers() }
-        didSet { addToHiddenRowObservers() }
+		didSet { addToHiddenRowObservers(); evaluateHidden() }
     }
 
     /// Returns if this row is currently disabled or not
