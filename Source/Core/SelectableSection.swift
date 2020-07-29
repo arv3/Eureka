@@ -62,59 +62,18 @@ public protocol SelectableSectionType: Collection {
     func selectedRows() -> [SelectableRow]
 }
 
-extension SelectableSectionType where Self: Section {
-    /**
-     Returns the selected row of this section. Should be used if selectionType is SingleSelection
-     */
-    public func selectedRow() -> SelectableRow? {
-        return selectedRows().first
-    }
-
-    /**
-     Returns the selected rows of this section. Should be used if selectionType is MultipleSelection
-     */
-    public func selectedRows() -> [SelectableRow] {
-        let selectedRows: [BaseRow] = self.filter { $0 is SelectableRow && $0.baseValue != nil }
-        return selectedRows.map { $0 as! SelectableRow }
-    }
-
-    /**
-     Internal function used to set up a collection of rows before they are added to the section
-     */
-    func prepare(selectableRows rows: [BaseRow]) {
-        for row in rows {
-            if let row = row as? SelectableRow {
-                row.onCellSelection { [weak self] cell, row in
-                    guard let s = self, !row.isDisabled else { return }
-                    switch s.selectionType {
-                    case .multipleSelection:
-                        row.value = row.value == nil ? row.selectableValue : nil
-                    case let .singleSelection(enableDeselection):
-                        s.forEach {
-                            guard $0.baseValue != nil && $0 != row && $0 is SelectableRow else { return }
-                            $0.baseValue = nil
-                            $0.updateCell()
-                        }
-                        // Check if row is not already selected
-                        if row.value == nil {
-                            row.value = row.selectableValue
-                        } else if enableDeselection {
-                            row.value = nil
-                        }
-                    }
-                    row.updateCell()
-                    s.onSelectSelectableRow?(cell, row)
-                }
-            }
-        }
-    }
-
-}
-
 /// A subclass of Section that serves to create a section with a list of selectable options.
 open class SelectableSection<Row>: Section, SelectableSectionType where Row: SelectableRowType, Row: BaseRow {
 
     public typealias SelectableRow = Row
+
+	public func selectedRow() -> Row? {
+		return first(where: { nil != $0.baseValue }) as? Row
+	}
+
+	public func selectedRows() -> [Row] {
+		return self.filter { nil != $0.baseValue }.compactMap { $0 as? Row }
+	}
 
     /// Defines how the selection works (single / multiple selection)
     public var selectionType = SelectionType.singleSelection(enableDeselection: true)
@@ -150,6 +109,30 @@ open class SelectableSection<Row>: Section, SelectableSectionType where Row: Sel
     #endif
 
     open override func rowsHaveBeenAdded(_ rows: [BaseRow], at: IndexSet) {
-        prepare(selectableRows: rows)
+		for row in rows {
+			if let row = row as? SelectableRow {
+				row.onCellSelection { [weak self] cell, row in
+					guard let s = self, !row.isDisabled else { return }
+					switch s.selectionType {
+					case .multipleSelection:
+						row.value = row.value == nil ? row.selectableValue : nil
+					case let .singleSelection(enableDeselection):
+                        s.forEach {
+                            guard $0.baseValue != nil && $0 != row && $0 is SelectableRow else { return }
+                            $0.baseValue = nil
+                            $0.updateCell()
+                        }
+						// Check if row is not already selected
+						if row.value == nil {
+							row.value = row.selectableValue
+						} else if enableDeselection {
+							row.value = nil
+						}
+					}
+					row.updateCell()
+					s.onSelectSelectableRow?(cell, row)
+				}
+			}
+		}
     }
 }
